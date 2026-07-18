@@ -27,9 +27,22 @@ This project currently supports **macOS only**.
 
 ## Install
 
+<img width="600" src="https://github.com/user-attachments/assets/8800efd1-d490-4bc3-9959-47ddff5a6db8" />
+
+<br>
+<br>
+
+<img width="600" src="https://github.com/user-attachments/assets/90461000-8b4b-4632-93cc-125a116b0830" />
+
+<br>
+<br>
+
+1. Click on the `patch_chatgpt_providers.py` file in the repository.
+2. Open the menu in the top-right.
+3. Click on **Download**.
+4. Run the downloaded script:
+
 ```bash
-git clone https://github.com/Keksuccino/Better-Codex-App-Custom-Provider-Support.git
-cd Better-Codex-App-Custom-Provider-Support
 python3 patch_chatgpt_providers.py
 ```
 
