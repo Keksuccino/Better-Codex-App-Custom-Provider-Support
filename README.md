@@ -152,8 +152,6 @@ Backups are stored by default in:
 ~/Applications/ChatGPT Patch Backups/
 ```
 
-This is an unofficial modification and is not affiliated with or supported by OpenAI.
-
 ## Disclaimer
 
 Use this script entirely at your own risk. It modifies the installed ChatGPT application in an unofficial and unsupported way.
@@ -161,3 +159,7 @@ Use this script entirely at your own risk. It modifies the installed ChatGPT app
 The author and contributors provide no warranty and accept no responsibility or liability for any problems, damage, or loss caused directly or indirectly by using this script. This includes, but is not limited to, lost or corrupted chat history or other data, an unusable or "bricked" application, account warnings or restrictions, account suspension or banning, security or privacy issues, and any other direct or consequential damage.
 
 Create and verify your own backups before running the script.
+
+---
+
+_This is an unofficial modification and is not affiliated with or supported by OpenAI._
