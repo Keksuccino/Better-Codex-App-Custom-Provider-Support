@@ -12,6 +12,9 @@ The patch:
 
 This project currently supports **macOS only**.
 
+> [!CAUTION]
+> Changing the provider in a running conversation/thread does **not** work. The conversation/thread continues using the provider it started with.
+
 ## Requirements
 
 - macOS
