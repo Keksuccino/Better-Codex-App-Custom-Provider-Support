@@ -29,7 +29,8 @@ import time
 from typing import Any, NoReturn
 
 
-PATCH_MARKER = b"__codexDesktopModelProvidersPatchV2"
+PATCH_MARKER = b"__codexDesktopModelProvidersPatchV3"
+LEGACY_PATCH_MARKER = b"__codexDesktopModelProvidersPatchV2"
 ASAR_PACKAGE = "@electron/asar@3.2.10"
 PRETTIER_PACKAGE = "prettier@3.6.2"
 
@@ -136,7 +137,7 @@ CENTRAL_DIFF = r"""@@ -4631,6 +4631,146 @@
 +  };
 +}
 +function codexProviderRoutingState() {
-+  return (window.__codexDesktopModelProvidersPatchV2 ??= {
++  return (window.__codexDesktopModelProvidersPatchV3 ??= {
 +    config: codexProviderRoutingFallback(),
 +    configPath: null,
 +    error: null,
@@ -301,7 +302,7 @@ PICKER_DIFF = r"""@@ -10162,6 +10162,204 @@
 +  };
 +}
 +function codexPickerProviderRoutingState() {
-+  return (window.__codexDesktopModelProvidersPatchV2 ??= {
++  return (window.__codexDesktopModelProvidersPatchV3 ??= {
 +    config: codexPickerProviderRoutingFallback(),
 +    configPath: null,
 +    error: null,
@@ -485,7 +486,49 @@ CENTRAL_DIFF_26721 = (
 )
 
 
-PICKER_DIFF_26721 = r"""@@ -549520,6 +549520,202 @@
+PICKER_DIFF_26721 = r"""@@ -520849,7 +520849,7 @@
+ }
+ function Scs(e) {
+-  let t = (0, wcs.c)(12),
++  let t = (0, wcs.c)(13),
+     { submenu: n } = e,
+     r = n.ariaLabel,
+     i = n.contentClassName,
+@@ -520871,10 +520871,15 @@
+     t[7] !== n.label ||
+     t[8] !== n.value ||
+     t[9] !== o ||
+-    t[10] !== l
++    t[10] !== l ||
++    t[11] !== n.extras
+       ? ((u = (0, QX.jsx)(Kos, {
+           ariaLabel: r,
+           contentClassName: i,
+           disabled: a,
+           flyoutHeader: o,
+           label: s,
+           value: c,
+-          children: l,
++          children:
++            n.extras == null
++              ? l
++              : (0, QX.jsxs)(QX.Fragment, { children: [n.extras, l] }),
+         })),
+         (t[4] = n.ariaLabel),
+         (t[5] = n.contentClassName),
+@@ -520887,8 +520892,9 @@
+         (t[8] = n.value),
+         (t[9] = o),
+         (t[10] = l),
+-        (t[11] = u))
+-      : (u = t[11]),
++        (t[11] = n.extras),
++        (t[12] = u))
++      : (u = t[12]),
+     u
+   );
+ }
+@@ -549520,6 +549525,202 @@
        (xMs = Aa(Q, (e, { get: t }) =>
          bMs({
            conversationId: e,
@@ -565,7 +608,7 @@ PICKER_DIFF_26721 = r"""@@ -549520,6 +549520,202 @@
 +  };
 +}
 +function codexPickerProviderRoutingState() {
-+  return (window.__codexDesktopModelProvidersPatchV2 ??= {
++  return (window.__codexDesktopModelProvidersPatchV3 ??= {
 +    config: codexPickerProviderRoutingFallback(),
 +    configPath: null,
 +    error: null,
@@ -697,38 +740,22 @@ PICKER_DIFF_26721 = r"""@@ -549520,6 +549520,202 @@
 +}
  function CMs(e) {
    let t = (0, TMs.c)(164),
-@@ -549615,6 +549811,7 @@
-         (t[39] = f))
-       : (f = t[39]),
-       (G = {
-+        extras: (0, wQ.jsx)(CodexCustomProviderPickerSection, {}),
-         effort: {
+@@ -549693,6 +549895,7 @@
+           value: s,
+         },
+         model: {
++          extras: (0, wQ.jsx)(CodexCustomProviderPickerSection, {}),
            ariaLabel: U.formatMessage(
              {
-@@ -549988,6 +550185,7 @@
-       (K = (0, wQ.jsxs)(wQ.Fragment, {
-         children: [
-+          (0, wQ.jsx)(CodexCustomProviderPickerSection, {}),
-           (0, wQ.jsx)(Kos, {
-             ariaLabel: U.formatMessage(
-               {
-@@ -550125,7 +550323,14 @@
-     : (me = t[89]);
-   let he;
-   t[90] !== le || t[91] !== pe || t[92] !== me
--    ? ((he = (0, wQ.jsxs)(wQ.Fragment, { children: [le, pe, me] })),
-+    ? ((he = (0, wQ.jsxs)(wQ.Fragment, {
-+        children: [
-+          (0, wQ.jsx)(CodexCustomProviderPickerSection, {}),
-+          le,
-+          pe,
-+          me,
-+        ],
-+      })),
-       (t[90] = le),
-       (t[91] = pe),
-       (t[92] = me),
-@@ -550438,11 +550643,13 @@
+               id: `composer.intelligenceDropdown.model.rowAriaLabel`,
+@@ -549782,6 +549985,7 @@
+       : ((g = (0, wQ.jsxs)(wQ.Fragment, {
+           children: [
++            (0, wQ.jsx)(CodexCustomProviderPickerSection, {}),
+             m,
+             (0, wQ.jsx)(`div`, {
+               className: `vertical-scroll-fade-mask flex max-h-[250px] flex-col overflow-y-auto`,
+@@ -550438,11 +550642,13 @@
  }
  var TMs,
    wQ,
@@ -742,9 +769,141 @@ PICKER_DIFF_26721 = r"""@@ -549520,6 +549520,202 @@
 """
 
 
+CENTRAL_DIFF_V2_TO_V3 = r"""@@ -137601,7 +137601,7 @@
+   };
+ }
+ function codexProviderRoutingState() {
+-  return (window.__codexDesktopModelProvidersPatchV2 ??= {
++  return (window.__codexDesktopModelProvidersPatchV3 ??= {
+     config: codexProviderRoutingFallback(),
+     configPath: null,
+     error: null,
+"""
+
+
+PICKER_DIFF_26721_V2_TO_V3 = r"""@@ -520849,7 +520849,7 @@
+ }
+ function Scs(e) {
+-  let t = (0, wcs.c)(12),
++  let t = (0, wcs.c)(13),
+     { submenu: n } = e,
+     r = n.ariaLabel,
+     i = n.contentClassName,
+@@ -520871,10 +520871,15 @@
+     t[7] !== n.label ||
+     t[8] !== n.value ||
+     t[9] !== o ||
+-    t[10] !== l
++    t[10] !== l ||
++    t[11] !== n.extras
+       ? ((u = (0, QX.jsx)(Kos, {
+           ariaLabel: r,
+           contentClassName: i,
+           disabled: a,
+           flyoutHeader: o,
+           label: s,
+           value: c,
+-          children: l,
++          children:
++            n.extras == null
++              ? l
++              : (0, QX.jsxs)(QX.Fragment, { children: [n.extras, l] }),
+         })),
+         (t[4] = n.ariaLabel),
+         (t[5] = n.contentClassName),
+@@ -520887,8 +520892,9 @@
+         (t[8] = n.value),
+         (t[9] = o),
+         (t[10] = l),
+-        (t[11] = u))
+-      : (u = t[11]),
++        (t[11] = n.extras),
++        (t[12] = u))
++      : (u = t[12]),
+     u
+   );
+ }
+@@ -549630,7 +549636,7 @@
+   };
+ }
+ function codexPickerProviderRoutingState() {
+-  return (window.__codexDesktopModelProvidersPatchV2 ??= {
++  return (window.__codexDesktopModelProvidersPatchV3 ??= {
+     config: codexPickerProviderRoutingFallback(),
+     configPath: null,
+     error: null,
+@@ -549886,7 +549892,6 @@
+         (t[39] = f))
+       : (f = t[39]),
+       (G = {
+-        extras: (0, wQ.jsx)(CodexCustomProviderPickerSection, {}),
+         effort: {
+           ariaLabel: U.formatMessage(
+             {
+@@ -549921,6 +549926,7 @@
+           value: s,
+         },
+         model: {
++          extras: (0, wQ.jsx)(CodexCustomProviderPickerSection, {}),
+           ariaLabel: U.formatMessage(
+             {
+               id: `composer.intelligenceDropdown.model.rowAriaLabel`,
+@@ -550013,6 +550019,7 @@
+       ? (g = t[52])
+       : ((g = (0, wQ.jsxs)(wQ.Fragment, {
+           children: [
++            (0, wQ.jsx)(CodexCustomProviderPickerSection, {}),
+             m,
+             (0, wQ.jsx)(`div`, {
+               className: `vertical-scroll-fade-mask flex max-h-[250px] flex-col overflow-y-auto`,
+@@ -550148,7 +550155,6 @@
+       : (k = t[77]),
+       (K = (0, wQ.jsxs)(wQ.Fragment, {
+         children: [
+-          (0, wQ.jsx)(CodexCustomProviderPickerSection, {}),
+           (0, wQ.jsx)(Kos, {
+             ariaLabel: U.formatMessage(
+               {
+@@ -550354,7 +550360,6 @@
+   t[90] !== le || t[91] !== pe || t[92] !== me
+     ? ((he = (0, wQ.jsxs)(wQ.Fragment, {
+         children: [
+-          (0, wQ.jsx)(CodexCustomProviderPickerSection, {}),
+           le,
+           pe,
+           me,
+"""
+
+
+PICKER_DIFF_LEGACY_V2_TO_V3 = r"""@@ -10242,7 +10242,7 @@
+   };
+ }
+ function codexPickerProviderRoutingState() {
+-  return (window.__codexDesktopModelProvidersPatchV2 ??= {
++  return (window.__codexDesktopModelProvidersPatchV3 ??= {
+     config: codexPickerProviderRoutingFallback(),
+     configPath: null,
+     error: null,
+@@ -10360,6 +10360,6 @@
+ function MO(e) {
+   let t = (0, PO.c)(169),
+     {
+"""
+
+
 PATCH_VARIANTS: tuple[tuple[str, str, str], ...] = (
     ("ChatGPT 26.721 Power Picker", CENTRAL_DIFF_26721, PICKER_DIFF_26721),
     ("ChatGPT 26.715 legacy picker", CENTRAL_DIFF, PICKER_DIFF),
+    (
+        "ChatGPT 26.721 provider-picker V2 upgrade",
+        CENTRAL_DIFF_V2_TO_V3,
+        PICKER_DIFF_26721_V2_TO_V3,
+    ),
+    (
+        "ChatGPT 26.715 provider-picker V2 marker upgrade",
+        CENTRAL_DIFF_V2_TO_V3,
+        PICKER_DIFF_LEGACY_V2_TO_V3,
+    ),
 )
 
 
@@ -871,6 +1030,7 @@ def print_completion_summary(
     *,
     backup: Path | None = None,
     already_installed: bool = False,
+    upgraded: bool = False,
 ) -> None:
     codex_config = config.parent / "config.toml"
     if already_installed:
@@ -880,7 +1040,13 @@ def print_completion_summary(
             "32",
         )
     else:
-        terminal_status("SUCCESS", "Patch installed successfully.", "32")
+        terminal_status(
+            "SUCCESS",
+            "Patch upgraded successfully."
+            if upgraded
+            else "Patch installed successfully.",
+            "32",
+        )
 
     terminal_heading("Custom provider config")
     terminal_status("CONFIG", "Edit this file to customize provider routing:", "36", detail=config)
@@ -1175,13 +1341,13 @@ def asar_header_hash(path: Path) -> str:
     return hashlib.sha256(header_json).hexdigest()
 
 
-def contains_marker(path: Path) -> bool:
-    overlap = len(PATCH_MARKER) - 1
+def contains_marker(path: Path, marker: bytes = PATCH_MARKER) -> bool:
+    overlap = len(marker) - 1
     previous = b""
     with path.open("rb") as handle:
         while chunk := handle.read(4 * 1024 * 1024):
             data = previous + chunk
-            if PATCH_MARKER in data:
+            if marker in data:
                 return True
             previous = data[-overlap:] if overlap else b""
     return False
@@ -1517,6 +1683,15 @@ def patch_app(app: Path, config: Path, backup_dir: Path, overwrite_config: bool)
         print_completion_summary(config, already_installed=True)
         return
 
+    is_upgrade = contains_marker(asar_path, LEGACY_PATCH_MARKER)
+    if is_upgrade:
+        terminal_status(
+            "UPGRADE",
+            "An earlier provider-picker patch was detected and will be upgraded.",
+            "35",
+            detail=f"ChatGPT {version}, build {build}",
+        )
+
     current_header_hash = asar_header_hash(asar_path)
     expected_header_hash = asar_integrity_hash(info)
     if current_header_hash != expected_header_hash:
@@ -1605,6 +1780,8 @@ def patch_app(app: Path, config: Path, backup_dir: Path, overwrite_config: bool)
 
         if not contains_marker(patched_asar):
             raise PatchError("Packed ASAR does not contain the patch marker")
+        if contains_marker(patched_asar, LEGACY_PATCH_MARKER):
+            raise PatchError("Packed ASAR still contains the legacy patch marker")
         patched_header_hash = asar_header_hash(patched_asar)
         info["ElectronAsarIntegrity"]["Resources/app.asar"]["hash"] = patched_header_hash
         with patched_plist.open("wb") as handle:
@@ -1639,6 +1816,8 @@ def patch_app(app: Path, config: Path, backup_dir: Path, overwrite_config: bool)
                 raise PatchError("Installed ASAR integrity verification failed")
             if not contains_marker(asar_path):
                 raise PatchError("Installed ASAR is missing the patch marker")
+            if contains_marker(asar_path, LEGACY_PATCH_MARKER):
+                raise PatchError("Installed ASAR still contains the legacy patch marker")
         except Exception as exc:
             if live_mutation_started:
                 terminal_status(
@@ -1666,7 +1845,7 @@ def patch_app(app: Path, config: Path, backup_dir: Path, overwrite_config: bool)
                     )
             raise exc
 
-    print_completion_summary(config, backup=backup)
+    print_completion_summary(config, backup=backup, upgraded=is_upgrade)
 
 
 def main() -> int:
