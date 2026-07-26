@@ -453,6 +453,301 @@ PICKER_DIFF = r"""@@ -10162,6 +10162,204 @@
 """
 
 
+# ChatGPT 26.721 moved both targets into app-initial, renamed the minified
+# bindings, and introduced the Power Picker. Keep a separate exact-hunk variant
+# so unsupported future builds still fail before the installed app is touched.
+CENTRAL_DIFF_26721 = (
+    CENTRAL_DIFF.replace("   let t = oe(e);", "   let t = abe(e);", 1)
+    .replace("await Xe(`codex-home`", "await tp(`codex-home`", 1)
+    .replace("await Xe(`read-file`", "await tp(`read-file`", 1)
+    .replace(" var jf,\n   Mf,", " var s9t,\n   c9t,", 1)
+    .replace(
+        """@@ -4809,6 +4950,7 @@
+             throw Error(
+               `AppServerRequestClient is missing a message dispatcher`,
+             );
++          e = await codexPatchAppServerParams(`thread/start`, e);
+           return this.enqueueRequest(
+             `thread/start`,
+             e,
+""",
+        """@@ -137758,6 +137899,7 @@
+             throw Error(
+               `AppServerRequestClient is missing a message dispatcher`,
+             );
++          e = await codexPatchAppServerParams(`thread/start`, e);
+           let n = t?.priority ?? `critical`,
+             r = Q7t(`thread/start`, t?.source),
+             i =
+""",
+        1,
+    )
+)
+
+
+PICKER_DIFF_26721 = r"""@@ -549520,6 +549520,202 @@
+       (xMs = Aa(Q, (e, { get: t }) =>
+         bMs({
+           conversationId: e,
+           resumeState: t(PD, e) ?? void 0,
+           turnCount: t(LD, e),
+         }),
+       )));
+   });
++function codexPickerProviderRoutingFallback() {
++  return {
++    version: 1,
++    defaultProvider: `openai`,
++    providers: [
++      {
++        id: `openai`,
++        label: `ChatGPT / OpenAI`,
++        description: `Uses your signed-in ChatGPT account`,
++      },
++      {
++        id: `openrouter`,
++        label: `OpenRouter`,
++        description: `Uses the OpenRouter provider from config.toml`,
++      },
++    ],
++    modelProviders: {
++      "moonshotai/kimi-k3": `openrouter`,
++      "x-ai/grok-4.5": `openrouter`,
++      "anthropic/claude-fable-5": `openrouter`,
++    },
++  };
++}
++function codexPickerNormalizeProviderRoutingConfig(e) {
++  if (e == null || typeof e !== `object` || Array.isArray(e))
++    throw Error(`Expected a JSON object`);
++  if (e.version !== 1) throw Error(`Unsupported version`);
++  if (!Array.isArray(e.providers) || e.providers.length === 0)
++    throw Error(`providers must be a non-empty array`);
++  let t = [],
++    n = new Set();
++  for (let r of e.providers) {
++    if (r == null || typeof r !== `object` || Array.isArray(r))
++      throw Error(`Every provider must be an object`);
++    let e = typeof r.id === `string` ? r.id.trim() : ``;
++    if (e.length === 0 || n.has(e))
++      throw Error(`Provider ids must be unique non-empty strings`);
++    n.add(e);
++    let i = typeof r.label === `string` ? r.label.trim() : ``;
++    t.push({
++      id: e,
++      label: i.length > 0 ? i : e,
++      description:
++        typeof r.description === `string` ? r.description.trim() : ``,
++    });
++  }
++  let r =
++    typeof e.default_provider === `string` ? e.default_provider.trim() : ``;
++  if (!n.has(r))
++    throw Error(`default_provider must reference a configured provider`);
++  let i = {};
++  if (
++    e.model_providers == null ||
++    typeof e.model_providers !== `object` ||
++    Array.isArray(e.model_providers)
++  )
++    throw Error(`model_providers must be an object`);
++  for (let [t, r] of Object.entries(e.model_providers)) {
++    let e = t.trim();
++    if (e.length === 0 || typeof r !== `string` || !n.has(r))
++      throw Error(`Every model mapping must reference a configured provider`);
++    i[e] = r;
++  }
++  return {
++    version: 1,
++    defaultProvider: r,
++    providers: t,
++    modelProviders: i,
++  };
++}
++function codexPickerProviderRoutingState() {
++  return (window.__codexDesktopModelProvidersPatchV2 ??= {
++    config: codexPickerProviderRoutingFallback(),
++    configPath: null,
++    error: null,
++    loaded: !1,
++    promise: null,
++  });
++}
++async function codexPickerLoadProviderRoutingConfig(e = !1) {
++  let t = codexPickerProviderRoutingState();
++  if (!e && t.loaded) return t.config;
++  if (t.promise != null) return t.promise;
++  return (
++    (t.promise = (async () => {
++      try {
++        let { codexHome: e } = await tp(`codex-home`, {
++            params: { hostId: `local` },
++          }),
++          n = e.includes(`\\`) && !e.includes(`/`) ? `\\` : `/`,
++          r = `${e.replace(/[\\/]+$/u, ``)}${n}desktop-model-providers.json`;
++        t.configPath = r;
++        let { contents: i } = await tp(`read-file`, {
++            params: { hostId: `local`, path: r },
++          }),
++          a = codexPickerNormalizeProviderRoutingConfig(JSON.parse(i));
++        return ((t.config = a), (t.error = null), (t.loaded = !0), a);
++      } catch (e) {
++        return (
++          (t.config = codexPickerProviderRoutingFallback()),
++          (t.error = e instanceof Error ? e.message : String(e)),
++          (t.loaded = !0),
++          t.config
++        );
++      } finally {
++        t.promise = null;
++      }
++    })()),
++    t.promise
++  );
++}
++function codexReadCustomProviderChoice(e) {
++  try {
++    let t = window.localStorage.getItem(`codex.customProviderSelection.v1`);
++    return t === `auto` || e.providers.some((e) => e.id === t) ? t : `auto`;
++  } catch {
++    return `auto`;
++  }
++}
++function codexWriteCustomProviderChoice(e) {
++  try {
++    window.localStorage.setItem(`codex.customProviderSelection.v1`, e);
++  } catch {}
++}
++function CodexCustomProviderPickerSection() {
++  let r = codexPickerProviderRoutingState(),
++    [e, t] = CodexProviderPatchReact.useState(r.config),
++    [n, i] = CodexProviderPatchReact.useState(r.error),
++    [a, o] = CodexProviderPatchReact.useState(() =>
++      codexReadCustomProviderChoice(r.config),
++    );
++  CodexProviderPatchReact.useEffect(() => {
++    let e = !0;
++    return (
++      codexPickerLoadProviderRoutingConfig(!0).then((n) => {
++        e &&
++          (t(n),
++          i(codexPickerProviderRoutingState().error),
++          o((e) =>
++            e === `auto` || n.providers.some((t) => t.id === e) ? e : `auto`,
++          ));
++      }),
++      () => {
++        e = !1;
++      }
++    );
++  }, []);
++  let s = (e) => (t) => {
++      (t?.preventDefault(), codexWriteCustomProviderChoice(e), o(e));
++      void Rf(`clear-prewarmed-threads-for-host`, { hostId: `local` }).catch(
++        () => {},
++      );
++    },
++    c =
++      e.providers.find((t) => t.id === e.defaultProvider)?.label ??
++      e.defaultProvider,
++    l = e.providers.map((e) =>
++      (0, wQ.jsx)(
++        yz.Item,
++        {
++          RightIcon: a === e.id ? Ym : void 0,
++          SubText:
++            e.description.length === 0
++              ? null
++              : (0, wQ.jsx)(`span`, {
++                  className: `text-token-description-foreground`,
++                  children: e.description,
++                }),
++          onSelect: s(e.id),
++          children: e.label,
++        },
++        e.id,
++      ),
++    );
++  return (0, wQ.jsxs)(wQ.Fragment, {
++    children: [
++      (0, wQ.jsx)(yz.Title, { children: `Provider for new tasks` }),
++      n == null
++        ? null
++        : (0, wQ.jsx)(yz.Item, {
++            disabled: !0,
++            SubText: (0, wQ.jsx)(`span`, {
++              className: `text-token-description-foreground`,
++              children: n,
++            }),
++            children: `Provider config error — using fallback`,
++          }),
++      (0, wQ.jsx)(yz.Item, {
++        RightIcon: a === `auto` ? Ym : void 0,
++        SubText: (0, wQ.jsx)(`span`, {
++          className: `text-token-description-foreground`,
++          children: `Uses the mapped provider for each model; ${c} when unmapped`,
++        }),
++        onSelect: s(`auto`),
++        children: `Automatic`,
++      }),
++      l,
++      (0, wQ.jsx)(yz.Separator, {}),
++    ],
++  });
++}
+ function CMs(e) {
+   let t = (0, TMs.c)(164),
+@@ -549615,6 +549811,7 @@
+         (t[39] = f))
+       : (f = t[39]),
+       (G = {
++        extras: (0, wQ.jsx)(CodexCustomProviderPickerSection, {}),
+         effort: {
+           ariaLabel: U.formatMessage(
+             {
+@@ -549988,6 +550185,7 @@
+       (K = (0, wQ.jsxs)(wQ.Fragment, {
+         children: [
++          (0, wQ.jsx)(CodexCustomProviderPickerSection, {}),
+           (0, wQ.jsx)(Kos, {
+             ariaLabel: U.formatMessage(
+               {
+@@ -550125,7 +550323,14 @@
+     : (me = t[89]);
+   let he;
+   t[90] !== le || t[91] !== pe || t[92] !== me
+-    ? ((he = (0, wQ.jsxs)(wQ.Fragment, { children: [le, pe, me] })),
++    ? ((he = (0, wQ.jsxs)(wQ.Fragment, {
++        children: [
++          (0, wQ.jsx)(CodexCustomProviderPickerSection, {}),
++          le,
++          pe,
++          me,
++        ],
++      })),
+       (t[90] = le),
+       (t[91] = pe),
+       (t[92] = me),
+@@ -550438,11 +550643,13 @@
+ }
+ var TMs,
+   wQ,
++  CodexProviderPatchReact,
+   EMs = e(() => {
+     ((TMs = c()),
++      (CodexProviderPatchReact = r(o(), 1)),
+       pd(),
+       ad(),
+       gls(),
+"""
+
+
+PATCH_VARIANTS: tuple[tuple[str, str, str], ...] = (
+    ("ChatGPT 26.721 Power Picker", CENTRAL_DIFF_26721, PICKER_DIFF_26721),
+    ("ChatGPT 26.715 legacy picker", CENTRAL_DIFF, PICKER_DIFF),
+)
+
+
 class PatchError(RuntimeError):
     """A safe, expected patch failure."""
 
@@ -1029,25 +1324,24 @@ def stop_target_app_processes(app: Path, allow_running: bool) -> None:
 
 def unique_candidate(
     assets: Path,
-    filename_fragment: str,
     content_needles: tuple[str, ...],
     role: str,
 ) -> Path:
-    filename_matches = sorted(
+    candidates = sorted(
         path
         for path in assets.glob("*.js")
-        if filename_fragment in path.name and not path.name.endswith(".map.js")
+        if not path.name.endswith(".map.js")
     )
     matches = []
-    for path in filename_matches:
+    for path in candidates:
         source = path.read_text(encoding="utf-8")
         if all(needle in source for needle in content_needles):
             matches.append(path)
     if len(matches) != 1:
         raise PatchError(
-            f"Expected exactly one {role} JavaScript bundle containing "
-            f"'{filename_fragment}' and its source markers, found {len(matches)} "
-            f"out of {len(filename_matches)} filename matches"
+            f"Expected exactly one {role} JavaScript bundle containing all "
+            f"required source markers, found {len(matches)} among "
+            f"{len(candidates)} JavaScript bundles"
         )
     return matches[0]
 
@@ -1069,8 +1363,7 @@ def parse_hunks(unified_diff: str) -> list[list[str]]:
     return hunks
 
 
-def apply_unified_diff(path: Path, unified_diff: str) -> None:
-    source = path.read_text(encoding="utf-8")
+def render_unified_diff(source: str, unified_diff: str, source_name: str) -> str:
     had_trailing_newline = source.endswith("\n")
     source_lines = source.splitlines()
     search_start = 0
@@ -1085,15 +1378,45 @@ def apply_unified_diff(path: Path, unified_diff: str) -> None:
         ]
         if len(matches) != 1:
             raise PatchError(
-                f"{path.name}: hunk {hunk_number} matched {len(matches)} times; "
+                f"{source_name}: hunk {hunk_number} matched {len(matches)} times; "
                 "the app build is unsupported or already modified"
             )
         index = matches[0]
         source_lines[index : index + len(old_lines)] = new_lines
         search_start = index + len(new_lines)
 
-    result = "\n".join(source_lines) + ("\n" if had_trailing_newline else "")
-    path.write_text(result, encoding="utf-8")
+    return "\n".join(source_lines) + ("\n" if had_trailing_newline else "")
+
+
+def apply_supported_patch_variant(central: Path, picker: Path) -> str:
+    originals = {
+        path: path.read_text(encoding="utf-8") for path in {central, picker}
+    }
+    compatible: list[tuple[str, dict[Path, str]]] = []
+
+    for name, central_diff, picker_diff in PATCH_VARIANTS:
+        rendered = originals.copy()
+        try:
+            rendered[central] = render_unified_diff(
+                rendered[central], central_diff, central.name
+            )
+            rendered[picker] = render_unified_diff(
+                rendered[picker], picker_diff, picker.name
+            )
+        except PatchError:
+            continue
+        compatible.append((name, rendered))
+
+    if len(compatible) != 1:
+        raise PatchError(
+            "Expected exactly one supported JavaScript patch layout, found "
+            f"{len(compatible)}. This app build is unsupported or already modified."
+        )
+
+    name, rendered = compatible[0]
+    for path, source in rendered.items():
+        path.write_text(source, encoding="utf-8")
+    return name
 
 
 def make_backup(app: Path, backup_dir: Path, version: str, build: str) -> Path:
@@ -1231,16 +1554,16 @@ def patch_app(app: Path, config: Path, backup_dir: Path, overwrite_config: bool)
 
         central = unique_candidate(
             assets,
-            "artifact-tab-content.electron~notebook-preview-panel~app-main~business-checkout",
             ("async prewarmThreadStart(", "async sendConfigReadRequest("),
             "App Server client",
         )
         picker = unique_candidate(
             assets,
-            "settings-command-menu-section-items~new-thread-panel-page~settings-pag",
-            ("composer.intelligenceDropdown.tooltip",),
+            ("composer.intelligenceDropdown.tooltip", "modelOptionsDisabled"),
             "model picker",
         )
+
+        patch_targets = list(dict.fromkeys((central, picker)))
 
         run(
             [
@@ -1248,13 +1571,17 @@ def patch_app(app: Path, config: Path, backup_dir: Path, overwrite_config: bool)
                 "--yes",
                 PRETTIER_PACKAGE,
                 "--write",
-                str(central),
-                str(picker),
+                *(str(path) for path in patch_targets),
             ],
             label="Preparing the JavaScript bundles",
         )
-        apply_unified_diff(central, CENTRAL_DIFF)
-        apply_unified_diff(picker, PICKER_DIFF)
+        patch_layout = apply_supported_patch_variant(central, picker)
+        terminal_status(
+            "LAYOUT",
+            "Matched a supported application bundle layout.",
+            "32",
+            detail=patch_layout,
+        )
 
         if PATCH_MARKER.decode() not in central.read_text(encoding="utf-8"):
             raise PatchError("Routing marker missing after patch")
@@ -1267,8 +1594,7 @@ def patch_app(app: Path, config: Path, backup_dir: Path, overwrite_config: bool)
                 "--yes",
                 PRETTIER_PACKAGE,
                 "--write",
-                str(central),
-                str(picker),
+                *(str(path) for path in patch_targets),
             ],
             label="Formatting and validating the patched JavaScript",
         )
