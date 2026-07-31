@@ -457,12 +457,29 @@ PICKER_DIFF = r"""@@ -10162,6 +10162,204 @@
 # ChatGPT 26.721 moved both targets into app-initial, renamed the minified
 # bindings, and introduced the Power Picker. Keep a separate exact-hunk variant
 # so unsupported future builds still fail before the installed app is touched.
-CENTRAL_DIFF_26721 = (
-    CENTRAL_DIFF.replace("   let t = oe(e);", "   let t = abe(e);", 1)
-    .replace("await Xe(`codex-home`", "await tp(`codex-home`", 1)
-    .replace("await Xe(`read-file`", "await tp(`read-file`", 1)
-    .replace(" var jf,\n   Mf,", " var s9t,\n   c9t,", 1)
-    .replace(
+def derive_versioned_diff(base: str, replacements: tuple[tuple[str, str, int], ...]) -> str:
+    """Derive an exact-hunk build variant while verifying every fragile rename.
+
+    Electron's bundler changes short identifiers between releases even when the
+    surrounding behavior is unchanged. Expected occurrence counts deliberately
+    turn an accidental partial replacement into an installer-development error.
+    """
+    derived = base
+    for old, new, expected_count in replacements:
+        actual_count = derived.count(old)
+        if actual_count != expected_count:
+            message = f"Versioned patch replacement count changed for {old!r}: expected {expected_count}, found {actual_count}"
+            raise RuntimeError(message)
+        derived = derived.replace(old, new)
+    return derived
+
+
+CENTRAL_RENAMES_26721 = (
+    ("   let t = oe(e);", "   let t = abe(e);", 1),
+    ("await Xe(`codex-home`", "await tp(`codex-home`", 1),
+    ("await Xe(`read-file`", "await tp(`read-file`", 1),
+    (" var jf,\n   Mf,", " var s9t,\n   c9t,", 1),
+    (
         """@@ -4809,6 +4950,7 @@
              throw Error(
                `AppServerRequestClient is missing a message dispatcher`,
@@ -482,8 +499,9 @@ CENTRAL_DIFF_26721 = (
              i =
 """,
         1,
-    )
+    ),
 )
+CENTRAL_DIFF_26721 = derive_versioned_diff(CENTRAL_DIFF, CENTRAL_RENAMES_26721)
 
 
 PICKER_DIFF_26721 = r"""@@ -520849,7 +520849,7 @@
@@ -769,6 +787,61 @@ PICKER_DIFF_26721 = r"""@@ -520849,7 +520849,7 @@
 """
 
 
+# Build 6067 preserves the 26.721 behavior and menu structure, but the bundler
+# renamed the surrounding symbols. Derive this layout from the verified 26.721
+# patch so the shared routing and picker implementation cannot drift.
+CENTRAL_RENAMES_26727 = (
+    ("   let t = abe(e);", "   let t = rSe(e);", 1),
+    ("await tp(`codex-home`", "await rp(`codex-home`", 1),
+    ("await tp(`read-file`", "await rp(`read-file`", 1),
+    (" var s9t,\n   c9t,", " var xdn,\n   Sdn,", 1),
+    (
+        "            r = Q7t(`thread/start`, t?.source),",
+        "            r = fdn(`thread/start`, t?.source),",
+        1,
+    ),
+)
+CENTRAL_DIFF_26727 = derive_versioned_diff(CENTRAL_DIFF_26721, CENTRAL_RENAMES_26727)
+
+
+PICKER_RENAMES_26727 = (
+    ("function Scs(e) {", "function Mws(e) {", 1),
+    ("wcs.c", "Pws.c", 2),
+    ("QX", "JY", 3),
+    ("Kos", "nCs", 1),
+    ("xMs", "XJs", 1),
+    ("Aa", "Ca", 1),
+    ("bMs", "YJs", 1),
+    ("PD", "aD", 1),
+    ("LD", "lD", 1),
+    ("await tp(`codex-home`", "await rp(`codex-home`", 1),
+    ("await tp(`read-file`", "await rp(`read-file`", 1),
+    (
+        "void Rf(`clear-prewarmed-threads-for-host`",
+        "void rp(`clear-prewarmed-threads-for-host`",
+        1,
+    ),
+    ("wQ", "CZ", 16),
+    ("yz", "_z", 5),
+    ("Ym", "ch", 2),
+    ("function CMs(e) {", "function QJs(e) {", 1),
+    ("TMs", "eYs", 3),
+    ("  EMs = e(() => {", "  tYs = n(() => {", 1),
+    ("     ((eYs = c()),", "     ((eYs = l()),", 1),
+    (
+        "(CodexProviderPatchReact = r(o(), 1))",
+        "(CodexProviderPatchReact = r(s(), 1))",
+        1,
+    ),
+    (
+        "       pd(),\n       ad(),\n       gls(),",
+        "       ld(),\n       td(),\n       ETs(),",
+        1,
+    ),
+)
+PICKER_DIFF_26727 = derive_versioned_diff(PICKER_DIFF_26721, PICKER_RENAMES_26727)
+
+
 CENTRAL_DIFF_V2_TO_V3 = r"""@@ -137601,7 +137601,7 @@
    };
  }
@@ -892,6 +965,7 @@ PICKER_DIFF_LEGACY_V2_TO_V3 = r"""@@ -10242,7 +10242,7 @@
 
 
 PATCH_VARIANTS: tuple[tuple[str, str, str], ...] = (
+    ("ChatGPT 26.727 Power Picker", CENTRAL_DIFF_26727, PICKER_DIFF_26727),
     ("ChatGPT 26.721 Power Picker", CENTRAL_DIFF_26721, PICKER_DIFF_26721),
     ("ChatGPT 26.715 legacy picker", CENTRAL_DIFF, PICKER_DIFF),
     (
