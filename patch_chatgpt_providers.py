@@ -795,11 +795,15 @@ PICKER_DIFF_26721 = r"""@@ -520849,7 +520849,7 @@
 
 # Build 6067 preserves the 26.721 behavior and menu structure, but the bundler
 # renamed the surrounding symbols. Derive this layout from the verified 26.721
-# patch so the shared routing and picker implementation cannot drift.
+# patch so the shared routing and picker implementation cannot drift. Note the
+# two host-file requests (codex-home / read-file) must use the local-host bridge
+# `bp` in this build, not the app-server dispatcher `rp`; the original bundle
+# calls them via `bp` (vscode://codex/<method>) while `rp` only handles the
+# request map in app-initial-*.js (thread/model/skill requests).
 CENTRAL_RENAMES_26727 = (
     ("   let t = abe(e);", "   let t = rSe(e);", 1),
-    ("await tp(`codex-home`", "await rp(`codex-home`", 1),
-    ("await tp(`read-file`", "await rp(`read-file`", 1),
+    ("await tp(`codex-home`", "await bp(`codex-home`", 1),
+    ("await tp(`read-file`", "await bp(`read-file`", 1),
     (" var s9t,\n   c9t,", " var xdn,\n   Sdn,", 1),
     (
         "            r = Q7t(`thread/start`, t?.source),",
@@ -820,8 +824,8 @@ PICKER_RENAMES_26727 = (
     ("bMs", "YJs", 1),
     ("PD", "aD", 1),
     ("LD", "lD", 1),
-    ("await tp(`codex-home`", "await rp(`codex-home`", 1),
-    ("await tp(`read-file`", "await rp(`read-file`", 1),
+    ("await tp(`codex-home`", "await bp(`codex-home`", 1),
+    ("await tp(`read-file`", "await bp(`read-file`", 1),
     (
         "void Rf(`clear-prewarmed-threads-for-host`",
         "void rp(`clear-prewarmed-threads-for-host`",
