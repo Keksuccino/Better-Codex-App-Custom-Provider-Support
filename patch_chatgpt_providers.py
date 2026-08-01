@@ -852,6 +852,243 @@ PICKER_RENAMES_26727 = (
 PICKER_DIFF_26727 = derive_versioned_diff(PICKER_DIFF_26721, PICKER_RENAMES_26727)
 
 
+# ChatGPT 26.727 build 6119 (the July 2026 re-release): the central
+# layout is identical to 26.727 except the app-server params getter was
+# renamed rSe -> nSe. The picker menu was rewritten: the item component
+# now renders the menu config's `extras` slot natively, so the separate
+# item-component patch is unnecessary. The injected section instead rides
+# the model-list fragment (the same slot the 26.727 patch used) plus the
+# standard picker-state functions and React binding.
+CENTRAL_DIFF_6119 = CENTRAL_DIFF_26727.replace(
+    "   let t = rSe(e);",
+    "   let t = nSe(e);",
+)
+PICKER_DIFF_6119 = r"""@@ -0,0 +0,0 @@
+         XJs({
+           conversationId: e,
+           resumeState: t(rD, e) ?? void 0,
+           turnCount: t(sD, e),
+         }),
+       )));
+   });
++function codexPickerProviderRoutingFallback() {
++  return {
++    version: 1,
++    defaultProvider: `openai`,
++    providers: [
++      {
++        id: `openai`,
++        label: `ChatGPT / OpenAI`,
++        description: `Uses your signed-in ChatGPT account`,
++      },
++      {
++        id: `openrouter`,
++        label: `OpenRouter`,
++        description: `Uses the OpenRouter provider from config.toml`,
++      },
++    ],
++    modelProviders: {
++      "moonshotai/kimi-k3": `openrouter`,
++      "x-ai/grok-4.5": `openrouter`,
++      "anthropic/claude-fable-5": `openrouter`,
++    },
++  };
++}
++function codexPickerNormalizeProviderRoutingConfig(e) {
++  if (e == null || typeof e !== `object` || Array.isArray(e))
++    throw Error(`Expected a JSON object`);
++  if (e.version !== 1) throw Error(`Unsupported version`);
++  if (!Array.isArray(e.providers) || e.providers.length === 0)
++    throw Error(`providers must be a non-empty array`);
++  let t = [],
++    n = new Set();
++  for (let r of e.providers) {
++    if (r == null || typeof r !== `object` || Array.isArray(r))
++      throw Error(`Every provider must be an object`);
++    let e = typeof r.id === `string` ? r.id.trim() : ``;
++    if (e.length === 0 || n.has(e))
++      throw Error(`Provider ids must be unique non-empty strings`);
++    n.add(e);
++    let i = typeof r.label === `string` ? r.label.trim() : ``;
++    t.push({
++      id: e,
++      label: i.length > 0 ? i : e,
++      description:
++        typeof r.description === `string` ? r.description.trim() : ``,
++    });
++  }
++  let r =
++    typeof e.default_provider === `string` ? e.default_provider.trim() : ``;
++  if (!n.has(r))
++    throw Error(`default_provider must reference a configured provider`);
++  let i = {};
++  if (
++    e.model_providers == null ||
++    typeof e.model_providers !== `object` ||
++    Array.isArray(e.model_providers)
++  )
++    throw Error(`model_providers must be an object`);
++  for (let [t, r] of Object.entries(e.model_providers)) {
++    let e = t.trim();
++    if (e.length === 0 || typeof r !== `string` || !n.has(r))
++      throw Error(`Every model mapping must reference a configured provider`);
++    i[e] = r;
++  }
++  return {
++    version: 1,
++    defaultProvider: r,
++    providers: t,
++    modelProviders: i,
++  };
++}
++function codexPickerProviderRoutingState() {
++  return (window.__codexDesktopModelProvidersPatchV3 ??= {
++    config: codexPickerProviderRoutingFallback(),
++    configPath: null,
++    error: null,
++    loaded: !1,
++    promise: null,
++  });
++}
++async function codexPickerLoadProviderRoutingConfig(e = !1) {
++  let t = codexPickerProviderRoutingState();
++  if (!e && t.loaded) return t.config;
++  if (t.promise != null) return t.promise;
++  return (
++    (t.promise = (async () => {
++      try {
++        let { codexHome: e } = await bp(`codex-home`, {
++            params: { hostId: `local` },
++          }),
++          n = e.includes(`\\`) && !e.includes(`/`) ? `\\` : `/`,
++          r = `${e.replace(/[\\/]+$/u, ``)}${n}desktop-model-providers.json`;
++        t.configPath = r;
++        let { contents: i } = await bp(`read-file`, {
++            params: { hostId: `local`, path: r },
++          }),
++          a = codexPickerNormalizeProviderRoutingConfig(JSON.parse(i));
++        return ((t.config = a), (t.error = null), (t.loaded = !0), a);
++      } catch (e) {
++        return (
++          (t.config = codexPickerProviderRoutingFallback()),
++          (t.error = e instanceof Error ? e.message : String(e)),
++          (t.loaded = !0),
++          t.config
++        );
++      } finally {
++        t.promise = null;
++      }
++    })()),
++    t.promise
++  );
++}
++function codexReadCustomProviderChoice(e) {
++  try {
++    let t = window.localStorage.getItem(`codex.customProviderSelection.v1`);
++    return t === `auto` || e.providers.some((e) => e.id === t) ? t : `auto`;
++  } catch {
++    return `auto`;
++  }
++}
++function codexWriteCustomProviderChoice(e) {
++  try {
++    window.localStorage.setItem(`codex.customProviderSelection.v1`, e);
++  } catch {}
++}
++function CodexCustomProviderPickerSection() {
++  let r = codexPickerProviderRoutingState(),
++    [e, t] = CodexProviderPatchReact.useState(r.config),
++    [n, i] = CodexProviderPatchReact.useState(r.error),
++    [a, o] = CodexProviderPatchReact.useState(() =>
++      codexReadCustomProviderChoice(r.config),
++    );
++  CodexProviderPatchReact.useEffect(() => {
++    let e = !0;
++    return (
++      codexPickerLoadProviderRoutingConfig(!0).then((n) => {
++        e &&
++          (t(n),
++          i(codexPickerProviderRoutingState().error),
++          o((e) =>
++            e === `auto` || n.providers.some((t) => t.id === e) ? e : `auto`,
++          ));
++      }),
++      () => {
++        e = !1;
++      }
++    );
++  }, []);
++  let s = (e) => (t) => {
++      (t?.preventDefault(), codexWriteCustomProviderChoice(e), o(e));
++      void rp(`clear-prewarmed-threads-for-host`, { hostId: `local` }).catch(
++        () => {},
++      );
++    },
++    c =
++      e.providers.find((t) => t.id === e.defaultProvider)?.label ??
++      e.defaultProvider,
++    l = e.providers.map((e) =>
++      (0, SZ.jsx)(
++        mz.Item,
++        {
++          RightIcon: a === e.id ? ch : void 0,
++          SubText:
++            e.description.length === 0
++              ? null
++              : (0, SZ.jsx)(`span`, {
++                  className: `text-token-description-foreground`,
++                  children: e.description,
++                }),
++          onSelect: s(e.id),
++          children: e.label,
++        },
++        e.id,
++      ),
++    );
++  return (0, SZ.jsxs)(SZ.Fragment, {
++    children: [
++      (0, SZ.jsx)(mz.Title, { children: `Provider for new tasks` }),
++      n == null
++        ? null
++        : (0, SZ.jsx)(mz.Item, {
++            disabled: !0,
++            SubText: (0, SZ.jsx)(`span`, {
++              className: `text-token-description-foreground`,
++              children: n,
++            }),
++            children: `Provider config error — using fallback`,
++          }),
++      (0, SZ.jsx)(mz.Item, {
++        RightIcon: a === `auto` ? ch : void 0,
++        SubText: (0, SZ.jsx)(`span`, {
++          className: `text-token-description-foreground`,
++          children: `Uses the mapped provider for each model; ${c} when unmapped`,
++        }),
++        onSelect: s(`auto`),
++        children: `Automatic`,
++      }),
++      l,
++      (0, SZ.jsx)(mz.Separator, {}),
++    ],
++  });
++}
+@@ -0,0 +0,0 @@
+       : ((g = (0, SZ.jsxs)(SZ.Fragment, {
+           children: [
++            (0, SZ.jsx)(CodexCustomProviderPickerSection, {}),
+             m,
+             (0, SZ.jsx)(`div`, {
+@@ -0,0 +0,0 @@
+ var tYs,
+   SZ,
++  CodexProviderPatchReact,
+   nYs = n(() => {
+     ((tYs = l()),
++      (CodexProviderPatchReact = r(s(), 1)),
+"""
+
+
+
 CENTRAL_DIFF_V2_TO_V3 = r"""@@ -137601,7 +137601,7 @@
    };
  }
@@ -975,6 +1212,11 @@ PICKER_DIFF_LEGACY_V2_TO_V3 = r"""@@ -10242,7 +10242,7 @@
 
 
 PATCH_VARIANTS: tuple[tuple[str, str, str], ...] = (
+    (
+        "ChatGPT 26.727 Power Picker (build 6119)",
+        CENTRAL_DIFF_6119,
+        PICKER_DIFF_6119,
+    ),
     ("ChatGPT 26.727 Power Picker", CENTRAL_DIFF_26727, PICKER_DIFF_26727),
     ("ChatGPT 26.721 Power Picker", CENTRAL_DIFF_26721, PICKER_DIFF_26721),
     ("ChatGPT 26.715 legacy picker", CENTRAL_DIFF, PICKER_DIFF),
